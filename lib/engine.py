@@ -241,6 +241,56 @@ def bubbles(img, t, t0, pts, col=(255, 255, 255), rise=30, rmax=14, speed=1.4):
         r = 5 + rmax * f
         d.ellipse([x - r, y - r - f * rise, x + r, y + r - f * rise], outline=col + (int(230 * (1 - f)),), width=4)
 
+def dissolve(p, noise, soft=0.25):
+    """organic reveal mask: 0 everywhere at p=0, 1 everywhere at p=1 (noise: HxW in [0,1])."""
+    return np.clip((p * (1 + soft) - noise) / soft, 0, 1)
+
+def scrub_brush(img, x, y, ang=0, col=(255, 196, 40)):
+    """hand scrub brush, bristles centred near (x, y)."""
+    lay = Image.new("RGBA", (460, 460), (0, 0, 0, 0)); d = ImageDraw.Draw(lay)
+    for i in range(13):
+        bx = 110 + i * 20
+        d.line([(bx, 300), (bx + (i % 3 - 1) * 3, 350)], fill=INK, width=9)
+        d.line([(bx, 300), (bx + (i % 3 - 1) * 3, 344)], fill=(235, 238, 240), width=5)
+    rrect(d, [90, 250, 370, 310], 18, fill=col, outline=INK, width=8)
+    d.chord([120, 120, 340, 320], 180, 360, fill=ACCENT, outline=INK, width=8)
+    img.alpha_composite(lay.rotate(ang, resample=Image.BICUBIC), (int(x - 230), int(y - 330)))
+
+def vac_nozzle(img, x, y, wand_to=(1300, 300)):
+    """vacuum wand + wide floor head centred at (x, y); wand runs off-screen toward wand_to."""
+    d = ImageDraw.Draw(img)
+    d.line([(x + 40, y - 20), wand_to], fill=INK, width=76)
+    d.line([(x + 40, y - 20), wand_to], fill=(150, 160, 172), width=58)
+    d.line([(x + 30, y - 34), (wand_to[0] - 10, wand_to[1] - 14)], fill=(205, 212, 220), width=10)
+    rrect(d, [x - 170, y - 45, x + 170, y + 45], 28, fill=(120, 132, 146), outline=INK, width=8)
+    rrect(d, [x - 140, y + 10, x + 140, y + 30], 8, fill=INK)
+    rrect(d, [x - 30, y - 70, x + 70, y - 30], 14, fill=ACCENT, outline=INK, width=7)
+
+def fan(img, cx, cy, r, ang):
+    d = ImageDraw.Draw(img)
+    rrect(d, [cx - 26, cy, cx + 26, cy + r + 90], 12, fill=(120, 132, 146), outline=INK, width=7)
+    rrect(d, [cx - r * 0.8, cy + r + 70, cx + r * 0.8, cy + r + 110], 20, fill=(120, 132, 146), outline=INK, width=7)
+    d.ellipse([cx - r, cy - r, cx + r, cy + r], fill=(235, 245, 248), outline=INK, width=10)
+    for k in range(3):
+        a = math.radians(ang + k * 120)
+        bx, by = cx + math.cos(a) * r * 0.48, cy + math.sin(a) * r * 0.48
+        br = r * 0.36
+        d.ellipse([bx - br, by - br, bx + br, by + br], fill=ACCENT, outline=INK, width=5)
+    d.ellipse([cx - r * 0.16, cy - r * 0.16, cx + r * 0.16, cy + r * 0.16], fill=INK)
+    for k in range(5):
+        rr_ = r * (0.35 + k * 0.14)
+        d.arc([cx - rr_, cy - rr_, cx + rr_, cy + rr_], 0, 360, fill=(120, 132, 146), width=2)
+
+def airflow(img, t, x0, x1, ys, col=(255, 255, 255), speed=900, alpha=170):
+    """wavy air lines streaming from x0 to x1 at the given rows."""
+    lay = Image.new("RGBA", (W, H), (0, 0, 0, 0)); d = ImageDraw.Draw(lay)
+    for i, y in enumerate(ys):
+        L = 260; off = (t * speed + i * 211) % (x1 - x0 + L) - L
+        pts = [(x0 + off + u, y + math.sin((x0 + off + u) / 60 + t * 6 + i) * 16) for u in range(0, L, 12)]
+        pts = [p for p in pts if x0 <= p[0] <= x1]
+        if len(pts) > 1: d.line(pts, fill=col + (alpha,), width=10, joint="curve")
+    img.alpha_composite(lay)
+
 # ---------- scene builders ----------
 def make_hook(dirty, clean, lines, pill_text, mark_xy, check_xy, split_to=0.5, labels=True, extra=None):
     """Scroll-stopping hook: punch-in, split screen dirty|clean from frame 0, bold stroked headline,

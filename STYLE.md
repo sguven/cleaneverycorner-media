@@ -30,6 +30,15 @@ When the calendar runs out, add the next 4 weeks of topics (same mix, seasonal, 
   bouncy bass, bright synth stab or pluck hook; energy from the first beat (no slow intro).
 - Accent scene changes with a whoosh/riser into each cut and an impact on the before/after reveal.
 - Loudness about -14 to -16 LUFS integrated, true peak ≤ -1.5 dB; fade out the last 1.5 s.
+- **Style rotation (mandatory for every new Reel):** the sound must differ from video to video. Do not call `make_track` with a hand-picked seed.
+  ```python
+  from lib.music_styles import pick_style
+  style, seed = pick_style(slug)          # reads/writes content/music_state.json, idempotent per slug
+  make_track(dur, cuts, impacts, music_wav, style=style, seed=seed)
+  ```
+  Styles: `housepop` (original), `funk` 106 BPM, `disco` 118, `futurebounce` 126, `dembow` 98, `trap` 140, `synthwave` 112 — all upbeat,
+  all generated in code. The picker never repeats either of the last two styles and evens out usage. Commit `content/music_state.json`
+  together with the Reel. Presets live in `lib/music_styles.py` (`STYLES` dict); to add a style add one entry, no other change needed.
 - `tools/music_v1_calm.py` is the old calm version — do not use it as-is. Build `lib/music_upbeat.py` once and reuse it.
 
 ## Accuracy and safety

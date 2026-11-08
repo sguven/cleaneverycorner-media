@@ -23,7 +23,14 @@ HOOKS = [[0, 2, 3, 2, 1, 3, 2, 3], [3, 2, 0, 2, 3, 1, 2, 0], [0, 3, 2, 3, 1, 2, 
 
 def note(m): return 440.0 * 2 ** ((m - 69) / 12)
 
-def make_track(dur, cuts=(), impacts=(), path="music.wav", bpm=124, seed=0):
+def make_track(dur, cuts=(), impacts=(), path="music.wav", bpm=124, seed=0, style=None):
+    """style=None/"housepop" -> this original sound; funk/disco/futurebounce/dembow/trap/synthwave -> lib.music_styles
+    (use lib.music_styles.pick_style(slug) to rotate styles per video)."""
+    if style not in (None, "housepop"):
+        try: from . import music_styles
+        except ImportError: import music_styles
+        music_styles.make_styled(dur, cuts, impacts, path, style=style, seed=seed)
+        return path
     rng = np.random.default_rng(seed + 1)
     N = int(SR * dur); out = np.zeros((N, 2), np.float32)
     drums = np.zeros((N, 2), np.float32)

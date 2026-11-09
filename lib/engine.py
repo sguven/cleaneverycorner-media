@@ -292,6 +292,54 @@ def airflow(img, t, x0, x1, ys, col=(255, 255, 255), speed=900, alpha=170):
     img.alpha_composite(lay)
 
 # ---------- scene builders ----------
+def sponge(img, x, y, ang=0, col=(255, 212, 70), scour=(60, 160, 100)):
+    """kitchen sponge centred at (x, y)."""
+    lay = Image.new("RGBA", (340, 340), (0, 0, 0, 0)); d = ImageDraw.Draw(lay)
+    rrect(d, [70, 120, 270, 240], 26, fill=col, outline=INK, width=8)
+    rrect(d, [70, 100, 270, 150], 18, fill=scour, outline=INK, width=8)
+    for k in range(6): d.ellipse([95 + k * 30, 180, 107 + k * 30, 192], fill=tuple(max(0, c - 30) for c in col))
+    img.alpha_composite(lay.rotate(ang, resample=Image.BICUBIC), (int(x - 170), int(y - 170)))
+
+def basin_back(img, x, y, water=(150, 205, 245), col=(70, 150, 230)):
+    """wash basin (call basin_front after drawing what sits inside)."""
+    d = ImageDraw.Draw(img)
+    d.ellipse([x - 400, y - 90, x + 400, y + 90], fill=col, outline=INK, width=9)
+    d.ellipse([x - 370, y - 70, x + 370, y + 70], fill=water)
+
+def basin_front(img, x, y, water=(150, 205, 245), col=(70, 150, 230)):
+    lay = Image.new("RGBA", img.size, (0, 0, 0, 0)); d = ImageDraw.Draw(lay)
+    d.rectangle([x - 370, y, x + 370, y + 70], fill=water + (175,))
+    d.pieslice([x - 370, y - 70, x + 370, y + 70], 0, 180, fill=water + (175,))
+    d.chord([x - 400, y - 90, x + 400, y + 260], 0, 180, fill=col + (255,), outline=INK, width=9)
+    d.rectangle([x - 404, y - 4, x + 404, y + 4], fill=col + (255,))
+    d.line([(x - 400, y), (x + 400, y)], fill=INK, width=9)
+    img.alpha_composite(lay)
+
+def wisps(img, t, xs, y0, height=320, col=(255, 255, 255), width=14, amp=26, alpha=220, speed=0.9):
+    """rising wavy wisps (steam col=white, smell col=green) starting at y0 for each x in xs."""
+    lay = Image.new("RGBA", (W, H), (0, 0, 0, 0)); d = ImageDraw.Draw(lay)
+    for i, x in enumerate(xs):
+        ph = (t * speed + i * 0.33) % 1
+        pts = [(x + math.sin(v / 40 + t * 5 + i) * amp, y0 - v - ph * 120) for v in range(0, height, 10)]
+        d.line(pts, fill=col + (int(alpha * math.sin(ph * math.pi)),), width=width, joint="curve")
+    img.alpha_composite(lay)
+
+def trail_mask(pts, upto, radius=110, blur=18):
+    """reveal mask (HxW float 0..1) painted by a tool that travelled pts[0..upto] (upto may be fractional)."""
+    m = Image.new("L", (W, H), 0); d = ImageDraw.Draw(m)
+    n = int(upto); fr = upto - n
+    path = list(pts[:n + 1])
+    if n + 1 < len(pts) and fr > 0:
+        (x0, y0), (x1, y1) = pts[n], pts[n + 1]; path.append((x0 + (x1 - x0) * fr, y0 + (y1 - y0) * fr))
+    if len(path) > 1: d.line(path, fill=255, width=radius * 2, joint="curve")
+    for x, y in path[:1] + path[-1:]: d.ellipse([x - radius, y - radius, x + radius, y + radius], fill=255)
+    return np.array(m.filter(ImageFilter.GaussianBlur(blur))).astype(np.float32) / 255
+
+def path_point(pts, upto):
+    n = min(int(upto), len(pts) - 1); fr = upto - n
+    if n + 1 >= len(pts): return pts[-1]
+    (x0, y0), (x1, y1) = pts[n], pts[n + 1]; return x0 + (x1 - x0) * fr, y0 + (y1 - y0) * fr
+
 def make_hook(dirty, clean, lines, pill_text, mark_xy, check_xy, split_to=0.5, labels=True, extra=None):
     """Scroll-stopping hook: punch-in, split screen dirty|clean from frame 0, bold stroked headline,
     red ring on the problem, check on the result, pill. lines = [(text, size, color), ...]."""
@@ -461,7 +509,7 @@ def concat(files, out):
         for f_ in files: fh.write(f"file '{os.path.abspath(f_)}'\n")
     subprocess.run(["ffmpeg", "-y", "-loglevel", "error", "-f", "concat", "-safe", "0", "-i", lst, "-c", "copy", out], check=True)
 
-def mux(video, wav, out, lufs=-15.0, tp=-3.0):
+def mux(video, wav, out, lufs=-15.0, tp=-3.0, limit=0.70):
     """two-pass loudnorm + limiter (AAC overshoot headroom) -> about -15 LUFS, true peak <= -1.5 dB, AAC 192k."""
     r = subprocess.run(["ffmpeg", "-hide_banner", "-i", wav, "-af", f"loudnorm=I={lufs}:TP={tp}:LRA=11:print_format=json", "-f", "null", "-"],
                        capture_output=True, text=True)
@@ -469,14 +517,15 @@ def mux(video, wav, out, lufs=-15.0, tp=-3.0):
     af = (f"loudnorm=I={lufs}:TP={tp}:LRA=11:measured_I={js['input_i']}:measured_TP={js['input_tp']}:"
           f"measured_LRA={js['input_lra']}:measured_thresh={js['input_thresh']}:offset={js['target_offset']}:linear=true")
     subprocess.run(["ffmpeg", "-y", "-loglevel", "error", "-i", video, "-i", wav, "-map", "0:v", "-map", "1:a", "-c:v", "copy",
-                    "-af", af + ",alimiter=limit=0.70:level=false:attack=2:release=60,aresample=44100", "-c:a", "aac", "-b:a", "192k", "-shortest", "-movflags", "+faststart", out], check=True)
+                    "-af", af + f",alimiter=limit={limit}:level=false:attack=2:release=60,aresample=44100", "-c:a", "aac", "-b:a", "192k", "-shortest", "-movflags", "+faststart", out], check=True)
 
-def build(scenes, workdir, out_mp4, music_fn, procs=2):
+def build(scenes, workdir, out_mp4, music_fn, procs=2, limit=0.70):
+    """limit: output limiter ceiling; lower it (e.g. 0.5) if ebur128 true peak > -1.5 dBFS."""
     """music_fn(duration, cut_times, impact_times, wav_path)"""
     files = render_scenes(scenes, os.path.join(workdir, "scenes"), procs)
     silent = os.path.join(workdir, "video_silent.mp4"); concat(files, silent)
     st, total = scene_starts(scenes)
     impacts = [st[i] + getattr(fn, "impact_at", 0) for i, (_, fn, _) in enumerate(scenes) if hasattr(fn, "impact_at")]
     wav = os.path.join(workdir, "music.wav"); music_fn(total, st[1:], impacts, wav)
-    mux(silent, wav, out_mp4)
+    mux(silent, wav, out_mp4, limit=limit)
     return total

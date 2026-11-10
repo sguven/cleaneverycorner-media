@@ -406,13 +406,14 @@ def make_safety(bg, rows, title="Safety first", label="BEFORE YOU START", width=
         for i, (kind, lines) in enumerate(wrapped):
             q = ease(seg(t, 0.5 + i * 0.5, 0.85 + i * 0.5))
             if q > 0:
-                rl = Image.new("RGBA", (W, 300), (0, 0, 0, 0)); l2 = ImageDraw.Draw(rl)
-                cx, cy = x0 + 105, 50
+                ex = max(0, len(lines) - 2) * 31          # 3+ line rows: grow the row layer so line 1 is not clipped
+                rl = Image.new("RGBA", (W, 300 + 2 * ex), (0, 0, 0, 0)); l2 = ImageDraw.Draw(rl)
+                cx, cy = x0 + 105, 50 + ex
                 (check_badge if kind == "ok" else x_badge)(l2, cx, cy)
                 ty = cy - (len(lines) - 1) * 31
                 for ln in lines:
                     l2.text((x0 + 170, ty), ln, font=fRb if kind == "never" else fR, fill=RED if kind == "never" else INK, anchor="lm"); ty += 62
-                base.alpha_composite(with_alpha(rl, q), (int((1 - q) * 60), int(y - 50)))
+                base.alpha_composite(with_alpha(rl, q), (int((1 - q) * 60), int(y - 50 - ex)))
             y += 70 + len(lines) * 62 + 20
         return base
     f.card_bottom = SAFE_TOP + h

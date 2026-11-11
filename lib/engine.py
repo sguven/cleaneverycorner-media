@@ -291,6 +291,18 @@ def airflow(img, t, x0, x1, ys, col=(255, 255, 255), speed=900, alpha=170):
         if len(pts) > 1: d.line(pts, fill=col + (alpha,), width=10, joint="curve")
     img.alpha_composite(lay)
 
+def flat_mop(img, x, y, handle_to=(1250, -200), col=(80, 150, 230), wobble=0.0):
+    """flat microfiber mop (top view), pad centred at (x, y); handle runs off-screen toward handle_to."""
+    d = ImageDraw.Draw(img)
+    hx, hy = x + wobble * 6, y - 20
+    d.line([(hx, hy), handle_to], fill=INK, width=34)
+    d.line([(hx, hy), handle_to], fill=(205, 212, 220), width=20)
+    rrect(d, [x - 190, y - 55, x + 190, y + 55], 30, fill=col, outline=INK, width=8)
+    for k in range(-170, 175, 22):                      # microfiber loops along the edge
+        d.ellipse([x + k - 9, y + 40, x + k + 9, y + 62], fill=col, outline=INK, width=3)
+    rrect(d, [x - 150, y - 40, x + 150, y - 4], 14, fill=(200, 210, 220), outline=INK, width=6)
+    d.ellipse([hx - 26, hy - 26, hx + 26, hy + 26], fill=ACCENT, outline=INK, width=6)
+
 # ---------- scene builders ----------
 def sponge(img, x, y, ang=0, col=(255, 212, 70), scour=(60, 160, 100)):
     """kitchen sponge centred at (x, y)."""

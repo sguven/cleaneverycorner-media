@@ -25,20 +25,24 @@ When the calendar runs out, add the next 4 weeks of topics (same mix, seasonal, 
 - Motion from frame 0: punch-in zoom, quick shake or pop-in scale on the headline; a pill like "5 STEPS" or "30 SECONDS".
 - Use that hook frame as the cover (`thumb_offset` in ms pointing at a frame where the full headline is visible).
 
-## Music rules (owner's standing request: more upbeat)
-- Original, generated in code (no licensed tracks): 118–128 BPM, four-on-the-floor kick, claps on 2 and 4, offbeat hats,
-  bouncy bass, bright synth stab or pluck hook; energy from the first beat (no slow intro).
-- Accent scene changes with a whoosh/riser into each cut and an impact on the before/after reveal.
+## Music rules (owner's standing requests: upbeat AND clean-sounding)
+- **Clean, clear sound (owner's request, 2026-11-11):** the old saw/noise-based sounds were too metallic and harsh. New Reels use ONLY the
+  clean, band-limited styles in `lib/music_clean.py` (piano, marimba, kalimba, glockenspiel, nylon guitar, clean e-piano,
+  round sine bass, soft claps/snaps/shaker, light reverb, transparent limiter). Never use `housepop`, `funk`, `disco`,
+  `futurebounce`, `dembow`, `trap` or `synthwave` for a new Reel (legacy, kept only to re-render old videos), and do not
+  add saw/square leads, white-noise hi-hats or tanh distortion.
+- Original, generated in code (no licensed tracks), upbeat and positive, energy from the first beat (no slow intro).
+- Accent scene changes with a whoosh into each cut and an impact on the before/after reveal (pass `cuts` and `impacts`).
 - Loudness about -14 to -16 LUFS integrated, true peak ≤ -1.5 dB; fade out the last 1.5 s.
-- **Style rotation (mandatory for every new Reel):** the sound must differ from video to video. Do not call `make_track` with a hand-picked seed.
+- **Style rotation (mandatory for every new Reel):** the sound must differ from video to video. Do not hand-pick style or seed.
   ```python
   from lib.music_styles import pick_style
-  style, seed = pick_style(slug)          # reads/writes content/music_state.json, idempotent per slug
+  style, seed = pick_style(slug)          # reads/writes content/music_state.json, idempotent per slug; returns clean styles only
   make_track(dur, cuts, impacts, music_wav, style=style, seed=seed)
   ```
-  Styles: `housepop` (original), `funk` 106 BPM, `disco` 118, `futurebounce` 126, `dembow` 98, `trap` 140, `synthwave` 112 — all upbeat,
-  all generated in code. The picker never repeats either of the last two styles and evens out usage. Commit `content/music_state.json`
-  together with the Reel. Presets live in `lib/music_styles.py` (`STYLES` dict); to add a style add one entry, no other change needed.
+  Clean styles: `brightpop` 118 BPM, `pianohouse` 122, `tropical` 104, `acoustic` 112, `keysfunk` 108, `kalimbapop` 96.
+  The picker never repeats either of the last two styles and evens out usage. Commit `content/music_state.json`
+  together with the Reel. Presets live in `lib/music_clean.py` (`STYLES` dict + add the name to `ROTATION` in `lib/music_styles.py`).
 - `tools/music_v1_calm.py` is the old calm version — do not use it as-is. Build `lib/music_upbeat.py` once and reuse it.
 
 ## Accuracy and safety

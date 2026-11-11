@@ -1,5 +1,8 @@
 """Original upbeat background track for @cleaneverycorner Reels (generated in code, no samples).
 
+NOTE (2026-11-11): the house-pop sound below is LEGACY (sounded metallic). New Reels use the clean styles of
+lib/music_clean.py via music_styles.pick_style(slug) -> make_track(..., style=style, seed=seed).
+
 124 BPM by default, four-on-the-floor kick, claps on 2 and 4, offbeat open hats, 16th shaker,
 bouncy offbeat octave bass, bright pluck hook + chord stabs, energy from beat 1.
 Whoosh/riser into every cut, impact on before/after reveals, 1.5 s fade-out.

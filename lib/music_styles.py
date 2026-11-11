@@ -13,7 +13,9 @@ CLI preview: python -m lib.music_styles STYLE DUR out.wav
 import numpy as np, wave, json, os, sys, hashlib
 
 SR = 44100
-ALL_STYLES = ["housepop", "funk", "disco", "futurebounce", "dembow", "trap", "synthwave"]
+ALL_STYLES = ["housepop", "funk", "disco", "futurebounce", "dembow", "trap", "synthwave"]   # legacy (saw/noise based)
+# Since 2026-11-11 only the clean, band-limited styles of lib/music_clean.py are rotated (the legacy ones sounded metallic).
+ROTATION = ["brightpop", "pianohouse", "tropical", "acoustic", "keysfunk", "kalimbapop"]
 
 QUAL = {"m7": [0, 3, 7, 10], "7": [0, 4, 7, 10], "maj7": [0, 4, 7, 11], "m": [0, 3, 7], "maj": [0, 4, 7]}
 
@@ -235,8 +237,13 @@ def render(dur, cuts, impacts, style, seed=0):
 
 
 def make_styled(dur, cuts=(), impacts=(), path="music.wav", style="funk", seed=0, lufs=-15.0):
-    """Render a styled track to a 16-bit stereo WAV, loudness ~lufs (if pyloudnorm is installed), peak <= -1.5 dB.
+    """Clean styles (ROTATION) are rendered by lib/music_clean.py; legacy names only reproduce old Reels.
+    Render a styled track to a 16-bit stereo WAV, loudness ~lufs (if pyloudnorm is installed), peak <= -1.5 dB.
     Returns the measured integrated loudness (or None when pyloudnorm is missing; ffmpeg loudnorm in the mux step covers it)."""
+    if style in ROTATION:
+        try: from . import music_clean
+        except ImportError: import music_clean
+        return music_clean.make_clean(dur, cuts, impacts, path, style=style, seed=seed, lufs=lufs)
     mix = render(dur, list(cuts), list(impacts), style, seed).astype(np.float64)
     measured = None
     try:
@@ -260,15 +267,15 @@ DEFAULT_STATE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "
 
 def pick_style(slug, state_path=DEFAULT_STATE):
     """Return (style, seed) for this Reel and remember it. Idempotent per slug; avoids the last 2 styles;
-    otherwise picks the least-used style so all seven get rotated evenly."""
+    otherwise picks the least-used clean style (ROTATION) so all six get rotated evenly."""
     state = {"log": []}
     if os.path.exists(state_path):
         with open(state_path) as f: state = json.load(f)
     for e in state["log"]:
         if e["slug"] == slug: return e["style"], e["seed"]
     recent = [e["style"] for e in state["log"][-2:]]
-    counts = {s: sum(1 for e in state["log"] if e["style"] == s) for s in ALL_STYLES}
-    style = min([s for s in ALL_STYLES if s not in recent], key=lambda s: (counts[s], ALL_STYLES.index(s)))
+    counts = {s: sum(1 for e in state["log"] if e["style"] == s) for s in ROTATION}
+    style = min([s for s in ROTATION if s not in recent], key=lambda s: (counts[s], ROTATION.index(s)))
     seed = int(hashlib.sha1(slug.encode()).hexdigest()[:6], 16) % 1000
     state["log"].append({"slug": slug, "style": style, "seed": seed})
     os.makedirs(os.path.dirname(state_path) or ".", exist_ok=True)

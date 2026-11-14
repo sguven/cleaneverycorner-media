@@ -303,6 +303,27 @@ def flat_mop(img, x, y, handle_to=(1250, -200), col=(80, 150, 230), wobble=0.0):
     rrect(d, [x - 150, y - 40, x + 150, y - 4], 14, fill=(200, 210, 220), outline=INK, width=6)
     d.ellipse([hx - 26, hy - 26, hx + 26, hy + 26], fill=ACCENT, outline=INK, width=6)
 
+def crevice_tool(img, x, y, wand_to=(1300, 2100), col=(120, 132, 146)):
+    """narrow vacuum crevice tool, tip at (x, y); hose/wand runs off-screen toward wand_to."""
+    d = ImageDraw.Draw(img)
+    ang = math.atan2(wand_to[1] - y, wand_to[0] - x); ca, sa = math.cos(ang), math.sin(ang)
+    mx, my = x + ca * 260, y + sa * 260
+    d.line([(mx, my), wand_to], fill=INK, width=70); d.line([(mx, my), wand_to], fill=(150, 160, 172), width=52)
+    px, py = -sa, ca                                     # perpendicular
+    poly = [(x + px * 14, y + py * 14), (x - px * 14, y - py * 14), (mx - px * 34, my - py * 34), (mx + px * 34, my + py * 34)]
+    d.polygon(poly, fill=col, outline=INK, width=7)
+    d.ellipse([mx - 40, my - 40, mx + 40, my + 40], fill=ACCENT, outline=INK, width=7)
+
+def detail_brush(img, x, y, ang=-35, col=(255, 196, 40)):
+    """soft round detailing brush, bristle tip at (x, y); handle points up-right (ang in degrees)."""
+    lay = Image.new("RGBA", (600, 600), (0, 0, 0, 0)); d = ImageDraw.Draw(lay)
+    cx, cy = 300, 300
+    d.ellipse([cx - 36, cy - 30, cx + 36, cy + 50], fill=(240, 236, 228), outline=INK, width=6)   # bristle tuft
+    for k in range(-24, 28, 12): d.line([(cx + k, cy - 10), (cx + k * 1.15, cy + 40)], fill=(200, 194, 184), width=3)
+    rrect(d, [cx - 30, cy - 80, cx + 30, cy - 26], 10, fill=(190, 198, 206), outline=INK, width=6)  # ferrule
+    rrect(d, [cx - 22, cy - 290, cx + 22, cy - 76], 20, fill=col, outline=INK, width=7)            # handle
+    img.alpha_composite(lay.rotate(ang, resample=Image.BICUBIC, center=(cx, cy + 40)), (int(x - cx), int(y - cy - 40)))
+
 # ---------- scene builders ----------
 def sponge(img, x, y, ang=0, col=(255, 212, 70), scour=(60, 160, 100)):
     """kitchen sponge centred at (x, y)."""

@@ -236,14 +236,14 @@ def render(dur, cuts, impacts, style, seed=0):
     return mix
 
 
-def make_styled(dur, cuts=(), impacts=(), path="music.wav", style="funk", seed=0, lufs=-15.0):
+def make_styled(dur, cuts=(), impacts=(), path="music.wav", style="funk", seed=0, lufs=-15.0, upbeat=False):
     """Clean styles (ROTATION) are rendered by lib/music_clean.py; legacy names only reproduce old Reels.
     Render a styled track to a 16-bit stereo WAV, loudness ~lufs (if pyloudnorm is installed), peak <= -1.5 dB.
     Returns the measured integrated loudness (or None when pyloudnorm is missing; ffmpeg loudnorm in the mux step covers it)."""
     if style in ROTATION:
         try: from . import music_clean
         except ImportError: import music_clean
-        return music_clean.make_clean(dur, cuts, impacts, path, style=style, seed=seed, lufs=lufs)
+        return music_clean.make_clean(dur, cuts, impacts, path, style=style, seed=seed, lufs=lufs, upbeat=upbeat)
     mix = render(dur, list(cuts), list(impacts), style, seed).astype(np.float64)
     measured = None
     try:

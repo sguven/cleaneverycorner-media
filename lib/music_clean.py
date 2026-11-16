@@ -235,8 +235,24 @@ def _limit(x, ceil, look=0.003, release=0.08):
     return x * g[:, None]
 
 
-def render(dur, cuts, impacts, style, seed=0):
-    S = STYLES[style]; rng = np.random.default_rng(seed + 7)
+UPBEAT_BPM = (118, 128)
+
+
+def upbeat_variant(style, seed=0):
+    """Same clean instruments, but dance-floor drive: 118-128 BPM, four-on-the-floor kick, claps on 2 and 4.
+    Styles already inside the range keep their tempo; slower ones are lifted to 118-124 (by seed)."""
+    S = dict(STYLES[style])
+    lo, hi = UPBEAT_BPM
+    if not lo <= S["bpm"] <= hi: S["bpm"] = lo + seed % 7
+    S["kick"] = "x...x...x...x..."
+    S["clap"] = "....x.......x..."
+    S["swing"] = min(S["swing"], 0.06)
+    S["bass_len"] = min(S["bass_len"], 1.6)
+    return S
+
+
+def render(dur, cuts, impacts, style, seed=0, upbeat=False):
+    S = upbeat_variant(style, seed) if upbeat else STYLES[style]; rng = np.random.default_rng(seed + 7)
     N = int(SR * dur) + SR
     mel = np.zeros((N, 2)); drums = np.zeros((N, 2)); fx = np.zeros((N, 2))
     step = 60 / S["bpm"] / 4; bar = step * 16
@@ -314,9 +330,9 @@ def render(dur, cuts, impacts, style, seed=0):
     return mix
 
 
-def make_clean(dur, cuts=(), impacts=(), path="music.wav", style="brightpop", seed=0, lufs=-15.0):
+def make_clean(dur, cuts=(), impacts=(), path="music.wav", style="brightpop", seed=0, lufs=-15.0, upbeat=False):
     """Render a clean track to 16-bit stereo WAV at ~lufs with peaks <= -2 dBFS. Returns measured LUFS (or None)."""
-    mix = render(dur, list(cuts), list(impacts), style, seed)
+    mix = render(dur, list(cuts), list(impacts), style, seed, upbeat=upbeat)
     ceil = 10 ** (-2.0 / 20); measured = None
     try:
         import pyloudnorm as pyln

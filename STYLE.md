@@ -9,16 +9,22 @@ One Reel per day, posted automatically via the Windsor.ai for Social Media conne
 When the calendar runs out, add the next 4 weeks of topics (same mix, seasonal, no repeats of `posted.csv`) and commit them.
 
 ## Video spec
-- 1080x1920, 30 fps, H.264 yuv420p (CRF 18, preset veryfast), AAC 192k, 25–40 s.
+- 1080x1920, 30 fps, H.264 yuv420p (CRF 18, preset veryfast), AAC 192k, **max 25 s, target 12–22 s** (2026-11-16: replaces the old 25–40 s rule; ~67% of viewers swiped away in the first 3 s).
+- Every scene ≤ 2–3 s; at most 2 short text blocks on screen at once (e.g. step card + one pill).
+- The last frame must lead back into the first frame so the Reel loops (`make_loop_outro(bg, HOOK(0, D))` in `lib/engine.py`).
 - Keep text out of the top 250 px and bottom 350 px (Instagram UI).
 - Fonts: Poppins (Bold for titles, Medium for body). No emoji drawn in video.
 - Brand colors: teal `#0E96AA`, yellow `#FFC428`, ink `#182634`, white. Green `#28AA64` for do, red `#E24040` for don't.
-- Structure: hook (≈3 s) → safety/“before you start” if any chemical is involved → numbered steps (card with STEP n + progress dots, animated illustration under it) → before/after reveal → outro card "Save this for cleaning day!" + "Follow @cleaneverycorner".
+- Structure: hook (≈2–2.5 s) → short safety scene whenever any chemical/product is used (ventilation, gloves, don't mix) → max 3 numbered steps (card with STEP n + progress dots, animated illustration under it) → before/after reveal → loop outro (save/follow card + comment prompt, cross-fades back into the hook).
+- Per-day script lives next to the video: `reels/YYYY-MM-DD-<slug>/render.py` (`python3 render.py stills` → `stills/`, `python3 render.py render`). `work/`, `stills/`, `music.wav` are git-ignored.
 - Reference implementation of the look: `tools/reference_render_bleach_tiles.py` (scene-by-scene PIL frames piped to ffmpeg, one file per scene, concat with `-c copy`).
   Reusable helpers belong in `lib/` (create `lib/engine.py` the first time and reuse/extend it on later days instead of rewriting).
 
 ## Hook / cover rules (owner's standing request: more engaging)
-- The first frame must stop the scroll: big bold headline (≥140 px, white with dark stroke or yellow), a problem statement or bold claim
+- The first frame must stop the scroll: big bold amber/yellow headline (≥140 px, **max 6 words**), a surprising or contrarian claim;
+  show the finished clean result or a close-up of the dirty surface; method and supplies come later.
+- Rotate hook patterns (question, "Stop...", number/time promise, before/after, "Wait for it"); "Stop..." at most 2× per week.
+  Examples:
   ("Your grout is NOT supposed to be this color", "Stop cleaning your windshield like this").
 - Show the payoff immediately: split-screen dirty vs clean (or before/after wipe) within the first 1 s, with a marker on the problem
   (red circle or arrow) and a check on the result.
@@ -32,6 +38,9 @@ When the calendar runs out, add the next 4 weeks of topics (same mix, seasonal, 
   `futurebounce`, `dembow`, `trap` or `synthwave` for a new Reel (legacy, kept only to re-render old videos), and do not
   add saw/square leads, white-noise hi-hats or tanh distortion.
 - Original, generated in code (no licensed tracks), upbeat and positive, energy from the first beat (no slow intro).
+- **118–128 BPM, four-on-the-floor kick, claps on 2 and 4 (2026-11-16):** always call `make_track(..., style=style, seed=seed, upbeat=True)`;
+  `upbeat=True` keeps the clean instruments of the picked style but lifts the tempo into range and sets the kick/clap pattern
+  (`lib/music_clean.upbeat_variant`). Pass the big opening moment (t=0) as an impact too.
 - Accent scene changes with a whoosh into each cut and an impact on the before/after reveal (pass `cuts` and `impacts`).
 - Loudness about -14 to -16 LUFS integrated, true peak ≤ -1.5 dB; fade out the last 1.5 s.
 - **Style rotation (mandatory for every new Reel):** the sound must differ from video to video. Do not hand-pick style or seed.
@@ -51,7 +60,9 @@ When the calendar runs out, add the next 4 weeks of topics (same mix, seasonal, 
 - No brand names or logos in the video; no claims of being a professional or a real person.
 
 ## Caption
-- Line 1: hook. Then the numbered steps (short), one safety line if relevant, then
+- Short and scannable, max ~900 characters (hard limit 2200). Line 1: hook (don't start with "Stop..." every day).
+  Then max 3 short steps/tips, one safety line if relevant, a comment question
+  ("Home or car — what should I clean next? 👇" / "Did you know this one? 👇"), then
   "Save this for cleaning day 📌 Follow for daily home & car cleaning tips."
 - Exactly 5 hashtags total: `#cleaneverycorner` + 4 topic tags (e.g. home: #cleaningtips #cleaninghacks + 2 specific;
   car: #carcleaning #cardetailing + 2 specific). Never more than 5 (Instagram limit).

@@ -497,6 +497,29 @@ def make_outro(bg):
         return base
     return f
 
+def make_loop_outro(bg, first_frame, ask="Did you know this one?", loop=0.45, card_top=480):
+    """Short outro (>= 2 s): save/follow card + one comment-prompt pill (max 2 text blocks), then the last
+    `loop` seconds cross-fade into first_frame (a PIL frame, usually HOOK(0, D)) so the Reel loops seamlessly."""
+    first = first_frame.convert("RGBA")
+    def f(t, D):
+        base = to_img(bg); sparkles(base, t, 0.0, 0.8); dim(base, 70)
+        lay = Image.new("RGBA", (W, H), (0, 0, 0, 0)); ld = ImageDraw.Draw(lay)
+        p = ease(seg(t, 0.0, 0.35)); top = card_top + (1 - p) * 60; a = int(255 * p)
+        rrect(ld, [70, top, W - 70, top + 470], 56, fill=ACCENT + (int(245 * p),))
+        bx, by = W / 2, top + 105
+        ld.polygon([(bx - 38, by - 55), (bx + 38, by - 55), (bx + 38, by + 55), (bx, by + 24), (bx - 38, by + 55)], fill=(255, 255, 255, a))
+        ld.text((W / 2, top + 235), "Save this for", font=F("Bold", 72), fill=(255, 255, 255, a), anchor="mm")
+        ld.text((W / 2, top + 318), "cleaning day!", font=F("Bold", 72), fill=ACC2 + (a,), anchor="mm")
+        q = ease(seg(t, 0.25, 0.6))
+        rrect(ld, [W / 2 - 320, top + 372, W / 2 + 320, top + 450], 39, fill=(255, 255, 255, int(255 * q)))
+        ld.text((W / 2, top + 411), "Follow @cleaneverycorner", font=F("Bold", 40), fill=ACCENT + (int(255 * q),), anchor="mm")
+        base.alpha_composite(lay)
+        pill(base, W / 2, top + 580, ask, F("Bold", 50), ACC2, INK, ease(seg(t, 0.45, 0.8)), padx=46)
+        k = ease_io(seg(t, D - loop, D - 1.0 / FPS))
+        if k > 0: base = Image.blend(base, first, k)
+        return base
+    return f
+
 # ---------- rendering ----------
 _SCENES, _OUT = None, None
 def _render_one(i):

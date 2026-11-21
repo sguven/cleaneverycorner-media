@@ -324,6 +324,40 @@ def detail_brush(img, x, y, ang=-35, col=(255, 196, 40)):
     rrect(d, [cx - 22, cy - 290, cx + 22, cy - 76], 20, fill=col, outline=INK, width=7)            # handle
     img.alpha_composite(lay.rotate(ang, resample=Image.BICUBIC, center=(cx, cy + 40)), (int(x - cx), int(y - cy - 40)))
 
+def hose_jet(img, nx, ny, tx, ty, t, col=(170, 220, 255), width=34):
+    """garden-hose spray: tapered water jet from nozzle (nx, ny) to target (tx, ty) + splash droplets at the target."""
+    lay = Image.new("RGBA", (W, H), (0, 0, 0, 0)); d = ImageDraw.Draw(lay)
+    ang = math.atan2(ty - ny, tx - nx); px, py = -math.sin(ang), math.cos(ang)
+    w0, w1 = width * 0.35, width * 1.6
+    d.polygon([(nx + px * w0, ny + py * w0), (tx + px * w1, ty + py * w1), (tx - px * w1, ty - py * w1), (nx - px * w0, ny - py * w0)],
+              fill=col + (170,))
+    rng = random.Random(int(t * 30))
+    for k in range(6):                                   # streaks inside the jet
+        u0 = rng.random() * 0.8; u1 = u0 + 0.15
+        o = rng.uniform(-0.6, 0.6)
+        a = (nx + (tx - nx) * u0 + px * o * (w0 + (w1 - w0) * u0), ny + (ty - ny) * u0 + py * o * (w0 + (w1 - w0) * u0))
+        b = (nx + (tx - nx) * u1 + px * o * (w0 + (w1 - w0) * u1), ny + (ty - ny) * u1 + py * o * (w0 + (w1 - w0) * u1))
+        d.line([a, b], fill=(255, 255, 255, 200), width=5)
+    for k in range(40):                                  # splash ring
+        r = rng.random() ** 0.6 * 170; a = rng.uniform(0, 2 * math.pi)
+        x, y = tx + math.cos(a) * r, ty + math.sin(a) * r * 0.7
+        s = 3 + rng.random() * 8
+        d.ellipse([x - s, y - s, x + s, y + s], fill=(235, 248, 255, int(230 * (1 - r / 180))))
+    img.alpha_composite(lay)
+
+def hose_gun(img, x, y, ang=135, col=(255, 196, 40)):
+    """pistol-grip hose nozzle; spray tip at (x, y), body extends away from the jet.
+    ang = jet direction in degrees, image coords (0 = right, 90 = down); best for jets pointing left (90..180)."""
+    lay = Image.new("RGBA", (520, 520), (0, 0, 0, 0)); d = ImageDraw.Draw(lay)
+    cx, cy = 260, 260                                    # drawn pointing left (jet goes to -x), tip at (cx, cy)
+    rrect(d, [cx, cy - 26, cx + 200, cy + 26], 20, fill=col, outline=INK, width=7)        # barrel
+    rrect(d, [cx - 14, cy - 34, cx + 30, cy + 34], 10, fill=(190, 198, 206), outline=INK, width=6)  # tip
+    d.polygon([(cx + 150, cy + 20), (cx + 200, cy + 20), (cx + 230, cy + 170), (cx + 175, cy + 175)], fill=col, outline=INK, width=7)  # grip
+    d.polygon([(cx + 120, cy + 24), (cx + 145, cy + 24), (cx + 160, cy + 120), (cx + 135, cy + 118)], fill=ACCENT, outline=INK, width=6)  # trigger
+    rrect(d, [cx + 200, cy - 20, cx + 250, cy + 20], 8, fill=(80, 170, 100), outline=INK, width=6)   # hose stub
+    rot = lay.rotate(180 - ang, resample=Image.BICUBIC, center=(cx, cy))
+    img.alpha_composite(rot, (int(x - cx), int(y - cy)))
+
 # ---------- scene builders ----------
 def sponge(img, x, y, ang=0, col=(255, 212, 70), scour=(60, 160, 100)):
     """kitchen sponge centred at (x, y)."""

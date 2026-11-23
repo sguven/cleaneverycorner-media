@@ -358,6 +358,17 @@ def hose_gun(img, x, y, ang=135, col=(255, 196, 40)):
     rot = lay.rotate(180 - ang, resample=Image.BICUBIC, center=(cx, cy))
     img.alpha_composite(rot, (int(x - cx), int(y - cy)))
 
+def razor_scraper(img, x, y, ang=0, col=(255, 196, 40)):
+    """flat razor scraper seen from above, blade edge centred at (x, y); ang=0 -> blade along x, handle pointing down."""
+    lay = Image.new("RGBA", (520, 520), (0, 0, 0, 0)); d = ImageDraw.Draw(lay)
+    cx, cy = 260, 260
+    rrect(d, [cx - 112, cy - 6, cx + 112, cy + 34], 6, fill=(214, 222, 230), outline=INK, width=6)   # steel blade
+    d.line([(cx - 100, cy + 4), (cx + 100, cy + 4)], fill=(255, 255, 255), width=4)                     # sharp edge glint
+    rrect(d, [cx - 120, cy + 26, cx + 120, cy + 76], 14, fill=col, outline=INK, width=7)                 # blade holder
+    d.polygon([(cx - 46, cy + 70), (cx + 46, cy + 70), (cx + 34, cy + 250), (cx - 34, cy + 250)], fill=col, outline=INK, width=7)
+    for k in range(4): d.line([(cx - 22, cy + 120 + k * 30), (cx + 22, cy + 120 + k * 30)], fill=INK, width=5)   # grip ribs
+    img.alpha_composite(lay.rotate(ang, resample=Image.BICUBIC), (int(x - 260), int(y - 260)))
+
 # ---------- scene builders ----------
 def sponge(img, x, y, ang=0, col=(255, 212, 70), scour=(60, 160, 100)):
     """kitchen sponge centred at (x, y)."""

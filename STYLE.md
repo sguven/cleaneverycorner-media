@@ -20,6 +20,29 @@ When the calendar runs out, add the next 4 weeks of topics (same mix, seasonal, 
 - Reference implementation of the look: `tools/reference_render_bleach_tiles.py` (scene-by-scene PIL frames piped to ffmpeg, one file per scene, concat with `-c copy`).
   Reusable helpers belong in `lib/` (create `lib/engine.py` the first time and reuse/extend it on later days instead of rewriting).
 
+## Opening formats: hook test from 2026-11-27 (owner's request, takes priority over the hook rules below)
+Why: 55–70% of viewers still swipe away in the first 3 s. From 2026-11-27 two new openings are tested against the
+current split-screen one. **`content/calendar.csv` has an `opening` column: use the format named there for that day.**
+No value there = rotate `wipe_open` → `quiz_open` → `split`, never the same as the last row of `content/posted.csv`.
+
+| opening | first frame | best for |
+|---|---|---|
+| `wipe_open` | no headline: full-screen dirty close-up, one wipe reveals the clean surface in the first second, caption sticker at ~0.3 s | anything with a clear visual before/after (glass, filters, stovetops, seats) |
+| `quiz_open` | question sticker + two answer cards (A/B) over the dirty surface, countdown, answer at ~1.7 s and the surface turns clean | "common mistake" / myth topics (rub vs blot, scrape vs soak) |
+| `split` | the current `make_hook` split screen with the yellow headline (myth-bust wording) | control: the best format so far |
+
+- Helpers are in `lib/hooks.py`: `make_wipe_hook(dirty, clean, path, caption, tool=...)`, `make_quiz_hook(dirty, clean,
+  question, a, b, correct, mark_xy=...)`, `sticker`. They take the same DIRTY/CLEAN backgrounds as `make_hook` and return
+  a normal scene function, so `make_loop_outro(bg, HOOK(0, D))` works unchanged. Worked examples: `tools/hook_demo.py`
+  (`python3 tools/hook_demo.py stills <dir>`).
+- Rules: motion from frame 0, ONE short text block in the first second (max 6 words), hook scene 2.0–2.4 s. The wipe path
+  must cross the dirtiest spot. Quiz answers are 1–3 words and both must be things people really do; the correct one must
+  be the tip the Reel then shows, checked against the same sources as the rest (accuracy and safety rules apply).
+- The safety scene still follows the hook whenever a product is used.
+- Cover (`thumb_offset`) = a hook frame where the caption/question and the clean result are both visible (≈ 1900 ms).
+- Log it: `content/posted.csv` has an `opening` column; write the format used for every post. The weekly review compares
+  skip rate and watch time by `opening` and keeps the winner.
+
 ## Hook / cover rules (owner's standing request: more engaging)
 - The first frame must stop the scroll: big bold amber/yellow headline (≥140 px, **max 6 words**), a surprising or contrarian claim;
   show the finished clean result or a close-up of the dirty surface; method and supplies come later.
@@ -72,4 +95,4 @@ When the calendar runs out, add the next 4 weeks of topics (same mix, seasonal, 
 2. Check `https://raw.githubusercontent.com/sguven/cleaneverycorner-media/main/reels/...` returns HTTP 200.
 3. Windsor `execute_action` → connector `instagram`, action `create_video_post`, account `17841441974005717`,
    params `video_url`, `caption`, `thumb_offset`, `share_to_feed: true`.
-4. Append the post to `content/posted.csv` (date, category, slug, media_id, video_url) and push.
+4. Append the post to `content/posted.csv` (date, category, slug, media_id, video_url, opening) and push.

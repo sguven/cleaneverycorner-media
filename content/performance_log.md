@@ -41,3 +41,13 @@ Today's Reel (11-22 clean-as-you-cook) is not in these numbers.
    one checklist-style home topic per week for saves.
 3. Length 15–18 s, post 12:00–14:30 ET (never late evening), and end the caption with an either/or question that is
    easy to answer in one word (e.g. "Vinegar or dish soap?") to get the first comments.
+
+
+## 2026-11-26: opening-format test started (owner's request)
+State before the test (Windsor, 2026-11-26): 25 followers, 23 posts; Reels since 11-15 sit at ~110–140 views, 50–69% skip
+(three low outliers on 11-23, 11-25 with 30–40 views), 0 comments. From 2026-11-27 each Reel uses the `opening` set in
+`content/calendar.csv` (`wipe_open`, `quiz_open`, `split` as control; see STYLE.md "Opening formats"). All posts up to
+11-26 are `split`.
+**Next weekly review:** add a "By opening" table (n, avg views, avg skip, median watch, saves, comments) and compare with
+the `split` baseline (avg skip 60.2%). Keep a format that is at least 5 points lower on skip over 2+ Reels, drop one that is
+worse than `split`, and fill the next week's `opening` column accordingly.

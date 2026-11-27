@@ -51,3 +51,10 @@ State before the test (Windsor, 2026-11-26): 25 followers, 23 posts; Reels since
 **Next weekly review:** add a "By opening" table (n, avg views, avg skip, median watch, saves, comments) and compare with
 the `split` baseline (avg skip 60.2%). Keep a format that is at least 5 points lower on skip over 2+ Reels, drop one that is
 worse than `split`, and fill the next week's `opening` column accordingly.
+
+### Önümüzdeki hafta için kurallar
+1. **Hook = the `opening` named in today's row of `content/calendar.csv`** (`wipe_open`, `quiz_open` or `split`), built with
+   `lib/hooks.py` (`make_wipe_hook` / `make_quiz_hook`; examples in `tools/hook_demo.py`); `split` = the usual `make_hook` with a
+   myth-bust headline (owner's request, 2026-11-26).
+2. One short text block in the first second (max 6 words), motion from frame 0; hook scene 2.0–2.4 s; safety scene still follows.
+3. Mix, length and posting time stay as in the 2026-11-22 rules; write the `opening` used into `content/posted.csv`.
